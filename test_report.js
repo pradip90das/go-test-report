@@ -7,7 +7,7 @@
  * @property {boolean} Passed
  * @property {boolean} Skipped
  */
-class TestStatus {}
+class TestStatus { }
 
 /**
  * @typedef TestGroupData
@@ -16,20 +16,20 @@ class TestStatus {}
  * @property {string} SkippedIndicator
  * @property {Array.<TestStatus>}
  */
-class TestGroupData {}
+class TestGroupData { }
 
 /**
  * @typedef TestResults
  * @type {Array.<TestGroupData>}
  */
-class TestResults extends Array {}
+class TestResults extends Array { }
 
 /**
  * @typedef SelectedItems
  * @property {HTMLElement|EventTarget} testResults
  * @property {String} selectedTestGroupColor
  */
-class SelectedItems {}
+class SelectedItems { }
 
 /**
  * @typedef GoTestReportElements
@@ -37,7 +37,7 @@ class SelectedItems {}
  * @property {HTMLElement} testResultsElem
  * @property {HTMLElement} testGroupListElem
  */
-class GoTestReportElements {}
+class GoTestReportElements { }
 
 
 /**
@@ -46,6 +46,13 @@ class GoTestReportElements {}
  * @returns {{testResultsClickHandler: testResultsClickHandler}}
  * @constructor
  */
+var testCaseFilter = ["PASS","FAIL","SKIP"]
+
+function Filter(status){
+  testCaseFilter = status
+  document.getElementById('0').click()
+}
+
 window.GoTestReport = function (elements) {
   const /**@type {SelectedItems}*/ selectedItems = {
     testResults: null,
@@ -54,12 +61,10 @@ window.GoTestReport = function (elements) {
 
   function addEventData(event) {
     if (event.data == null) {
-      event.data = {target: event.target}
+      event.data = { target: event.target }
     }
     return event
   }
-
-
   const goTestReport = {
     /**
      * Invoked when a user clicks on one of the test group div elements.
@@ -70,10 +75,10 @@ window.GoTestReport = function (elements) {
      * @param {function(target: Element, data: TestResults)} testGroupListHandler
      */
     testResultsClickHandler: function (target,
-                                       shiftKey,
-                                       data,
-                                       selectedItems,
-                                       testGroupListHandler) {
+      shiftKey,
+      data,
+      selectedItems,
+      testGroupListHandler) {
 
       if (target.classList.contains('testResultGroup') === false) {
         return
@@ -99,12 +104,20 @@ window.GoTestReport = function (elements) {
         const testPassed = /**@type {boolean}*/ testResult.Passed
         const testSkipped = /**@type {boolean}*/ testResult.Skipped
         const testPassedStatus = /**@type {string}*/ (testPassed) ? '' : (testSkipped ? 'skipped' : 'failed')
+        const testStatus = /**@type {string}*/ (testPassed) ? 'PASS' : (testSkipped ? 'SKIP' : 'FAIL')
         const testId = /**@type {string}*/ target.attributes['id'].value
-        testGroupList += `<div class="testGroupRow ${testPassedStatus}" data-groupid="${testId}" data-index="${i}">
+        if (testCaseFilter == undefined  || testCaseFilter.includes(testStatus)) {
+          testGroupList += `<div class="testGroupRow ${testPassedStatus}" data-groupid="${testId}" data-index="${i}">
+        <span class="testTextStatus ${testPassedStatus}">${testStatus}</span>
         <span class="testStatus ${testPassedStatus}">${(testPassed) ? '&check' : (testSkipped ? '&dash' : '&cross')};</span>
         <span class="testTitle">${testResult.TestName}</span>
         <span class="testDuration"><span>${testResult.ElapsedTime}s </span>⏱</span>
       </div>`
+        }
+
+      }
+      if (testGroupList === ''){
+        testGroupList += `<div <div style="padding-top: 50px;margin-left: 45%;"><span class="">No ${testCaseFilter} testcase</span></div>`
       }
       const testGroupListElem = elements.testGroupListElem
       testGroupListElem.innerHTML = ''
@@ -112,7 +125,7 @@ window.GoTestReport = function (elements) {
 
       if (shiftKey) {
         testGroupListElem.querySelectorAll('.testGroupRow')
-                         .forEach((elem) => testGroupListHandler(elem, data))
+          .forEach((elem) => testGroupListHandler(elem, data))
       } else if (testResults.length === 1) {
         testGroupListHandler(testGroupListElem.querySelector('.testGroupRow'), data)
       }
@@ -178,17 +191,17 @@ window.GoTestReport = function (elements) {
   //|    setup DOM events    |
   //+------------------------+
   elements.testResultsElem
-          .addEventListener('click', event =>
-            goTestReport.testResultsClickHandler(/**@type {HTMLElement}*/ addEventData(event).data.target,
-                                                 event.shiftKey,
-                                                 elements.data,
-                                                 selectedItems,
-                                                 goTestReport.testGroupListHandler))
+    .addEventListener('click', event =>
+      goTestReport.testResultsClickHandler(/**@type {HTMLElement}*/ addEventData(event).data.target,
+        event.shiftKey,
+        elements.data,
+        selectedItems,
+        goTestReport.testGroupListHandler))
 
   elements.testGroupListElem
-          .addEventListener('click', event =>
-            goTestReport.testGroupListHandler(/**@type {Element}*/ event.target,
-                                              elements.data))
+    .addEventListener('click', event =>
+      goTestReport.testGroupListHandler(/**@type {Element}*/ event.target,
+        elements.data))
 
   return goTestReport
 }

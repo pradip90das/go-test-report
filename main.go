@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/hex"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +13,8 @@ import (
 	"go/token"
 	"go/types"
 	"html/template"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"sort"
@@ -23,6 +25,12 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
+
+//go:embed test_report.html.template
+var testReportHTMLTemplateStr []byte
+
+//go:embed test_report.js
+var testReportJsCodeStr []byte
 
 type (
 	goTestOutputRow struct {
@@ -58,6 +66,7 @@ type (
 		JsCode                         template.JS
 		numOfTestsPerGroup             int
 		OutputFilename                 string
+		InputFilename                  string
 		TestExecutionDate              string
 	}
 
@@ -72,6 +81,7 @@ type (
 		sizeFlag   string
 		groupSize  int
 		listFlag   string
+		inputFlag  string
 		outputFlag string
 		verbose    bool
 	}
@@ -116,8 +126,8 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 	flags := &cmdFlags{}
 	tmplData := &templateData{}
 	rootCmd := &cobra.Command{
-		Use:  "go-test-report",
-		Long: "Captures go test output via stdin and parses it into a single self-contained html file.",
+		Use:  "report",
+		Long: "convert json go test report to html",
 		RunE: func(cmd *cobra.Command, args []string) (e error) {
 			startTime := time.Now()
 			if err := parseSizeFlag(tmplData, flags); err != nil {
@@ -126,15 +136,14 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 			tmplData.numOfTestsPerGroup = flags.groupSize
 			tmplData.ReportTitle = flags.titleFlag
 			tmplData.OutputFilename = flags.outputFlag
-			if err := checkIfStdinIsPiped(); err != nil {
-				return err
-			}
-			stdin := os.Stdin
-			stdinScanner := bufio.NewScanner(stdin)
+			tmplData.OutputFilename = flags.outputFlag
+			tmplData.InputFilename = flags.inputFlag
+			// if err := checkIfStdinIsPiped(); err != nil {
+			// 	return err
+			// }
 			testReportHTMLTemplateFile, _ := os.Create(tmplData.OutputFilename)
 			reportFileWriter := bufio.NewWriter(testReportHTMLTemplateFile)
 			defer func() {
-				_ = stdin.Close()
 				if err := reportFileWriter.Flush(); err != nil {
 					e = err
 				}
@@ -143,7 +152,7 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 				}
 			}()
 			startTestTime := time.Now()
-			allPackageNames, allTests, err := readTestDataFromStdIn(stdinScanner, flags, cmd)
+			allPackageNames, allTests, err := readTestDataFromFile(tmplData.InputFilename, flags, cmd)
 			if err != nil {
 				return errors.New(err.Error() + "\n")
 			}
@@ -160,29 +169,17 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 			}
 			err = generateReport(tmplData, allTests, testFileDetailByPackage, elapsedTestTime, reportFileWriter)
 			elapsedTime := time.Since(startTime)
-			elapsedTimeMsg := []byte(fmt.Sprintf("[go-test-report] finished in %s\n", elapsedTime))
+			elapsedTimeMsg := []byte(fmt.Sprintf("[report] finished in %s\n", elapsedTime))
 			if _, err := cmd.OutOrStdout().Write(elapsedTimeMsg); err != nil {
 				return err
 			}
 			return nil
 		},
 	}
-	versionCmd := &cobra.Command{
-		Use:   "version",
-		Short: "Prints the version number of go-test-report",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			msg := fmt.Sprintf("go-test-report v%s", version)
-			if _, err := fmt.Fprintln(cmd.OutOrStdout(), msg); err != nil {
-				return err
-			}
-			return nil
-		},
-	}
-	rootCmd.AddCommand(versionCmd)
 	rootCmd.PersistentFlags().StringVarP(&flags.titleFlag,
 		"title",
 		"t",
-		"go-test-report",
+		"report",
 		"the title text shown in the test report")
 	rootCmd.PersistentFlags().StringVarP(&flags.sizeFlag,
 		"size",
@@ -202,8 +199,14 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 	rootCmd.PersistentFlags().StringVarP(&flags.outputFlag,
 		"output",
 		"o",
-		"test_report.html",
+		"report.html",
 		"the HTML output file")
+	rootCmd.PersistentFlags().StringVarP(&flags.inputFlag,
+		"input",
+		"i",
+		"",
+		"the json input file")
+	rootCmd.MarkPersistentFlagRequired("input")
 	rootCmd.PersistentFlags().BoolVarP(&flags.verbose,
 		"verbose",
 		"v",
@@ -213,21 +216,20 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 	return rootCmd, tmplData, flags
 }
 
-func readTestDataFromStdIn(stdinScanner *bufio.Scanner, flags *cmdFlags, cmd *cobra.Command) (allPackageNames map[string]*types.Nil, allTests map[string]*testStatus, e error) {
+func readTestDataFromFile(inputFile string, flags *cmdFlags, cmd *cobra.Command) (allPackageNames map[string]*types.Nil, allTests map[string]*testStatus, e error) {
 	allTests = map[string]*testStatus{}
 	allPackageNames = map[string]*types.Nil{}
-
-	// read from stdin and parse "go test" results
-	for stdinScanner.Scan() {
-		lineInput := stdinScanner.Bytes()
-		if flags.verbose {
-			newline := []byte("\n")
-			if _, err := cmd.OutOrStdout().Write(append(lineInput, newline[0])); err != nil {
-				return nil, nil, err
-			}
+	testReportJsCodeByte, err := ioutil.ReadFile(inputFile)
+	if err != nil {
+		log.Fatalf("failed reading data from file: %s", err)
+	}
+	testReportJsCodeStr := string(testReportJsCodeByte)
+	for _, lineInput := range strings.Split(testReportJsCodeStr, "\n") {
+		if len(lineInput) < 1 {
+			continue
 		}
 		goTestOutputRow := &goTestOutputRow{}
-		if err := json.Unmarshal(lineInput, goTestOutputRow); err != nil {
+		if err := json.Unmarshal([]byte(lineInput), goTestOutputRow); err != nil {
 			return nil, nil, err
 		}
 		if goTestOutputRow.TestName != "" {
@@ -390,22 +392,17 @@ func (t byName) Less(i, j int) bool {
 }
 
 func generateReport(tmplData *templateData, allTests map[string]*testStatus, testFileDetailByPackage testFileDetailsByPackage, elapsedTestTime time.Duration, reportFileWriter *bufio.Writer) error {
-	// read the html template from the generated embedded asset go file
-	tpl := template.New("test_report.html.template")
-	testReportHTMLTemplateStr, err := hex.DecodeString(testReportHTMLTemplate)
+	// // read the html template from the generated embedded asset go file
+	// testReportHTMLTemplateStr, err := ioutil.ReadFile("../dist/report.html.template")
+	tpl := template.New("report.html.template")
+	tpl, err := tpl.Parse(string(testReportHTMLTemplateStr))
 	if err != nil {
 		return err
 	}
-	tpl, err = tpl.Parse(string(testReportHTMLTemplateStr))
-	if err != nil {
-		return err
-	}
-	// read Javascript code from the generated embedded asset go file
-	testReportJsCodeStr, err := hex.DecodeString(testReportJsCode)
-	if err != nil {
-		return err
-	}
-
+	// testReportJsCodeStr, err := ioutil.ReadFile("../dist/report.js")
+	// if err != nil {
+	// 	log.Panicf("failed reading data from file: %s", err)
+	// }
 	tmplData.NumOfTestPassed = 0
 	tmplData.NumOfTestFailed = 0
 	tmplData.NumOfTestSkipped = 0
@@ -443,10 +440,6 @@ func generateReport(tmplData *templateData, allTests map[string]*testStatus, tes
 			tmplData.NumOfTestPassed++
 		}
 		tgCounter++
-		if tgCounter == tmplData.numOfTestsPerGroup {
-			tgCounter = 0
-			tgID++
-		}
 	}
 	tmplData.NumOfTests = tmplData.NumOfTestPassed + tmplData.NumOfTestFailed + tmplData.NumOfTestSkipped
 	tmplData.TestDuration = elapsedTestTime.Round(time.Millisecond)

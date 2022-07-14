@@ -14,7 +14,7 @@
         div.pageHeader span.projectTitle {
             font-family: serif;
             font-size: 2em;
-            padding-left: 56px;
+            padding-left: 30px;
             padding-top: 80px;
             display: block;
             color: #a5a5a5;
@@ -43,19 +43,23 @@
         div.pageHeader div.testStats span.total {
             border-right: 1px #afafaf dotted;
             background: #8298af;
+            cursor : pointer;
         }
 
         div.pageHeader div.testStats span.passed {
             border-right: 1px #afafaf dotted;
             background: #6fca83;
+            cursor : pointer;
         }
 
         div.pageHeader div.testStats span.skipped {
             background: #bababa;
+            cursor : pointer;
         }
 
         div.pageHeader div.testStats span.failed {
             background: #ff7676;
+            cursor : pointer;
         }
 
         div.pageHeader div.testStats span {
@@ -73,10 +77,8 @@
         }
 
         div.pageHeader .testExecutionDate {
-            display: inline-block;
-            position: absolute;
             right: 10px;
-            margin: 14px 32px 8px 40px;
+            margin: 14px 40px 8px 30px;
             color: #9e9e9e;
             font-size: 0.9em;
         }
@@ -86,14 +88,15 @@
         }
 
         .cardContainer {
-            padding: 16px 16px 16px;
+            padding: 0px 0px 0px;
             box-shadow: 0 4px 4px #d4d4d4;
-            background-color: white;
+            height : 0px;
         }
 
         #testResults {
             display: flex;
             flex-wrap: wrap;
+            visibility : hidden;
         }
 
         .testResultGroup {
@@ -146,6 +149,26 @@
             padding-left: 20px;
             padding-right: 12px;
         }
+        .cardContainer.testGroupList .testGroupRow span.testTextStatus {
+            font-size: 1em;
+            color: #139e13;
+            pointer-events: none;
+            display: inline-block;
+            overflow: hidden;
+            float: left;
+            padding-top: 10px;
+            padding-left: 10px;
+            /* padding-left: 20px; */
+            /* padding-right: 12px; */
+        }
+        .cardContainer.testGroupList .testGroupRow span.testTextStatus.skipped {
+            color: gray;
+        }
+
+        .cardContainer.testGroupList .testGroupRow span.testTextStatus.failed {
+            color: red;
+        }
+
 
         .cardContainer.testGroupList .testGroupRow span.testStatus.skipped {
             color: gray;
@@ -234,16 +257,21 @@
 </head>
 <body>
 <div class="pageHeader">
+    <div>
     <span class="projectTitle">{{.ReportTitle}}</span>
+    <span class="testExecutionDate">{{.TestExecutionDate}}</span>
+    </div>
     <div class="testStats">
-        <span class="total"><span class="indicator">&boxbox;</span> Total: <strong>{{.NumOfTests}}</strong>Duration: <strong>{{.TestDuration}}</strong>
-        </span><span class="passed"><span class="indicator">&check;</span> Passed: <strong>{{.NumOfTestPassed}}</strong>
-        </span><span class="skipped"><span class="indicator">&dash;</span> Skipped: <strong>{{.NumOfTestSkipped}}</strong>
-        </span><span class="failed"><span class="indicator">&cross;</span> Failed: <strong>{{.NumOfTestFailed}}</strong>
+        <span class="total" onclick="Filter(['FAIL','PASS','SKIP'])" id="total">
+            <span  class="indicator">&boxbox;</span> 
+            Total: <strong>{{.NumOfTests}}</strong>Duration: <strong>{{.TestDuration}}</strong>
+        </span>
+        <span class="passed" onclick="Filter(['PASS'])"><span class="indicator">&check;</span> Passed: <strong>{{.NumOfTestPassed}}</strong>
+        </span><span class="skipped" onclick="Filter(['SKIP'])"><span class="indicator">&dash;</span> Skipped: <strong>{{.NumOfTestSkipped}}</strong>
+        </span><span class="failed" onclick="Filter(['FAIL'])" ><span class="indicator">&cross;</span> Failed: <strong>{{.NumOfTestFailed}}</strong>
         </span>
     </div>
-    <span class="testGroupsTitle">Test Groups:</span>
-    <span class="testExecutionDate">{{.TestExecutionDate}}</span>
+    
 </div>
 <div class="testReportContainer">
     <div class="cardContainer">
@@ -263,12 +291,13 @@
      */
     const data = {{.TestResults}}
 
-    const report = window.GoTestReport({
+    window.GoTestReport({
                                          data: data,
                                          testResultsElem: document.getElementById('testResults'),
                                          testGroupListElem: document.getElementById('testGroupList')
                                        });
 
+    document.getElementById('total').click()
 
 </script>
 </body>

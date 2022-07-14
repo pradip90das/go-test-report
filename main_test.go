@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -143,66 +141,6 @@ func TestGroupOutputFlagIfMissingValue(t *testing.T) {
 	rootCmdErr := rootCmd.Execute()
 	assertions.NotNil(rootCmdErr)
 	assertions.Equal(rootCmdErr.Error(), `flag needs an argument: --output`)
-}
-
-func TestReadTestDataFromStdIn(t *testing.T) {
-	assertions := assert.New(t)
-	flags := &cmdFlags{}
-	data := `{"Time":"2020-07-10T01:24:44.269511-05:00","Action":"run","Package":"go-test-report","Test":"TestFunc1"}
-{"Time":"2020-07-10T01:24:44.270071-05:00","Action":"output","Package":"go-test-report","Test":"TestFunc1","Output":"=== RUN   TestFunc1\n"}
-{"Time":"2020-07-10T01:24:44.270295-05:00","Action":"output","Package":"go-test-report","Test":"TestFunc1","Output":"--- PASS: TestFunc1 (1.25s)\n"}
-{"Time":"2020-07-10T01:24:44.270311-05:00","Action":"pass","Package":"go-test-report","Test":"TestFunc1","Elapsed":1.25}
-{"Time":"2020-07-10T01:24:44.269511-05:00","Action":"run","Package":"package2","Test":"TestFunc2"}
-{"Time":"2020-07-10T01:24:44.270071-05:00","Action":"output","Package":"package2","Test":"TestFunc2","Output":"=== RUN   TestFunc2\n"}
-{"Time":"2020-07-10T01:24:44.270295-05:00","Action":"output","Package":"package2","Test":"TestFunc2","Output":"--- PASS: TestFunc2 (0.25s)\n"}
-{"Time":"2020-07-10T01:24:44.270311-05:00","Action":"pass","Package":"package2","Test":"TestFunc2","Elapsed":0.25}
-{"Time":"2020-07-10T01:24:44.269511-05:00","Action":"run","Package":"go-test-report","Test":"TestFunc3"}
-{"Time":"2020-07-10T01:24:44.270071-05:00","Action":"output","Package":"go-test-report","Test":"TestFunc3","Output":"=== RUN   TestFunc3\n"}
-{"Time":"2020-07-10T01:24:44.270071-05:00","Action":"output","Package":"go-test-report","Test":"TestFunc3","Output":"sample output\n"}
-{"Time":"2020-07-10T01:24:44.270295-05:00","Action":"output","Package":"go-test-report","Test":"TestFunc3","Output":"--- FAIL: TestFunc3 (0.00s)\n"}
-{"Time":"2020-07-10T01:24:44.270311-05:00","Action":"fail","Package":"go-test-report","Test":"TestFunc3","Elapsed":0}
-`
-	stdinScanner := bufio.NewScanner(strings.NewReader(data))
-	cmd := &cobra.Command{}
-	allPackageNames, allTests, err := readTestDataFromStdIn(stdinScanner, flags, cmd)
-	assertions.Nil(err)
-	assertions.Len(allPackageNames, 2)
-	assertions.Contains(allPackageNames, "go-test-report")
-	assertions.Contains(allPackageNames, "package2")
-	assertions.Len(allTests, 3)
-	assertions.Contains(allTests, "go-test-report.TestFunc1")
-	assertions.Contains(allTests, "package2.TestFunc2")
-	assertions.Contains(allTests, "go-test-report.TestFunc3")
-
-	val := allTests["go-test-report.TestFunc1"]
-	assertions.True(val.Passed)
-	assertions.Equal("TestFunc1", val.TestName)
-	assertions.Equal(1.25, val.ElapsedTime)
-	assertions.Len(val.Output, 4)
-	assertions.Equal("=== RUN   TestFunc1\n", val.Output[1])
-	assertions.Equal("--- PASS: TestFunc1 (1.25s)", val.Output[2])
-	assertions.Equal(0, val.TestFunctionDetail.Line)
-	assertions.Equal(0, val.TestFunctionDetail.Col)
-
-	val = allTests["package2.TestFunc2"]
-	assertions.True(val.Passed)
-	assertions.Equal("TestFunc2", val.TestName)
-	assertions.Equal(0.25, val.ElapsedTime)
-	assertions.Len(val.Output, 4)
-	assertions.Equal("=== RUN   TestFunc2\n", val.Output[1])
-	assertions.Equal("--- PASS: TestFunc2 (0.25s)", val.Output[2])
-	assertions.Equal(0, val.TestFunctionDetail.Line)
-	assertions.Equal(0, val.TestFunctionDetail.Col)
-
-	val = allTests["go-test-report.TestFunc3"]
-	assertions.False(val.Passed)
-	assertions.Equal("TestFunc3", val.TestName)
-	assertions.Equal(0.00, val.ElapsedTime)
-	assertions.Len(val.Output, 5)
-	assertions.Equal("=== RUN   TestFunc3\n", val.Output[1])
-	assertions.Equal("--- FAIL: TestFunc3 (0.00s)\n", val.Output[3])
-	assertions.Equal(0, val.TestFunctionDetail.Line)
-	assertions.Equal(0, val.TestFunctionDetail.Col)
 }
 
 func TestGetAllDetails(t *testing.T) {
@@ -342,28 +280,6 @@ func TestGenerateReport(t *testing.T) {
 	assertions.Empty(tmplData.TestResults[1].TestResults[0].TestFileName)
 	assertions.Equal(0, tmplData.TestResults[1].TestResults[0].TestFunctionDetail.Col)
 	assertions.Equal(0, tmplData.TestResults[1].TestResults[0].TestFunctionDetail.Line)
-}
-
-func TestSameTestName(t *testing.T) {
-	assertions := assert.New(t)
-	flags := &cmdFlags{}
-	data := `{"Time":"2020-07-10T01:24:44.269511-05:00","Action":"run","Package":"foo","Test":"Test"}
-{"Time":"2020-07-10T01:24:44.270071-05:00","Action":"output","Package":"foo","Test":"Test","Output":"=== RUN   Test\n"}
-{"Time":"2020-07-10T01:24:44.270295-05:00","Action":"output","Package":"foo","Test":"Test","Output":"--- PASS: Test (1.5s)\n"}
-{"Time":"2020-07-10T01:24:44.270311-05:00","Action":"pass","Package":"foo","Test":"Test","Elapsed":1.5}
-{"Time":"2020-07-10T01:24:44.269511-05:00","Action":"run","Package":"bar","Test":"Test"}
-{"Time":"2020-07-10T01:24:44.270071-05:00","Action":"output","Package":"bar","Test":"Test","Output":"=== RUN   Test\n"}
-{"Time":"2020-07-10T01:24:44.270295-05:00","Action":"output","Package":"bar","Test":"Test","Output":"--- FAIL: Test (0.5s)\n"}
-{"Time":"2020-07-10T01:24:44.270311-05:00","Action":"fail","Package":"bar","Test":"Test","Elapsed":0.5}
-`
-	stdinScanner := bufio.NewScanner(strings.NewReader(data))
-	cmd := &cobra.Command{}
-	allPackageNames, allTests, err := readTestDataFromStdIn(stdinScanner, flags, cmd)
-	assertions.Nil(err)
-	assertions.Len(allPackageNames, 2)
-	assertions.Contains(allPackageNames, "foo")
-	assertions.Contains(allPackageNames, "bar")
-	assertions.Len(allTests, 2)
 }
 
 func TestParseSizeFlagIfValueIsNotInteger(t *testing.T) {
