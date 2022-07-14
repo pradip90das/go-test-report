@@ -10,7 +10,7 @@
 [![license: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://shields.io/)
 [![version: 0.9.3](https://img.shields.io/badge/version-0.9.3-default.svg)](https://shields.io/)
 [![platforms: macos,linux,windows](https://img.shields.io/badge/platforms-macos%20|%20linux%20|%20windows-orange.svg)](https://shields.io/)
-[![goreportcard](https://goreportcard.com/badge/github.com/vakenbolt/go-test-report)](https://goreportcard.com/report/github.com/vakenbolt/go-test-report)
+[![goreportcard](https://goreportcard.com/badge/github.com/pradip90das/go-test-report)](https://goreportcard.com/report/github.com/pradip90das/go-test-report)
 
 `go-test-report` captures `go test` output and parses it into a _single_ self-contained HTML file. 
 
@@ -22,7 +22,7 @@ Install the go binary using `go get`.
 
 
 ```shell
-$ go get -u github.com/vakenbolt/go-test-report/
+$ go get -u github.com/pradip90das/go-test-report/
 ```
 
 ## Usage
@@ -186,5 +186,5 @@ $ gmake buildall
 ## Contribute & Support
 
 - Add a GitHub Star
-- Suggest [new features, ideas and optimizations](https://github.com/vakenbolt/go-test-report/issues)
-- [Report issues](https://github.com/vakenbolt/go-test-report/issues)
+- Suggest [new features, ideas and optimizations](https://github.com/pradip90das/go-test-report/issues)
+- [Report issues](https://github.com/pradip90das/go-test-report/issues)
