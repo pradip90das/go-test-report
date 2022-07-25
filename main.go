@@ -32,6 +32,13 @@ var testReportHTMLTemplateStr []byte
 //go:embed test_report.js
 var testReportJsCodeStr []byte
 
+type Status struct {
+	Pass  int `json:"pass,omitempty"`
+	Fail  int `json:"fail,omitempty"`
+	Total int `json:"total,omitempty"`
+	Skip  int `json:"skip,omitempty"`
+}
+
 type (
 	goTestOutputRow struct {
 		Time     string
@@ -133,6 +140,7 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 			if err := parseSizeFlag(tmplData, flags); err != nil {
 				return err
 			}
+
 			tmplData.numOfTestsPerGroup = flags.groupSize
 			tmplData.ReportTitle = flags.titleFlag
 			tmplData.OutputFilename = flags.outputFlag
@@ -160,6 +168,7 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 			// used to the location of test functions in test go files by package and test function name.
 			var testFileDetailByPackage testFileDetailsByPackage
 			if flags.listFlag != "" {
+
 				testFileDetailByPackage, err = getAllDetails(flags.listFlag)
 			} else {
 				testFileDetailByPackage, err = getPackageDetails(allPackageNames)
@@ -336,6 +345,7 @@ func getTestDetails(packageName string) (testFileDetailsByTest, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	goListJSON := &goListJSON{}
 	if err := json.Unmarshal(out.Bytes(), goListJSON); err != nil {
 		return nil, err
@@ -415,6 +425,7 @@ func generateReport(tmplData *templateData, allTests map[string]*testStatus, tes
 	for test, status := range allTests {
 		tests = append(tests, testRef{test, status.TestName})
 	}
+
 	sort.Sort(byName(tests))
 	for _, test := range tests {
 		status := allTests[test.key]
@@ -442,6 +453,13 @@ func generateReport(tmplData *templateData, allTests map[string]*testStatus, tes
 		tgCounter++
 	}
 	tmplData.NumOfTests = tmplData.NumOfTestPassed + tmplData.NumOfTestFailed + tmplData.NumOfTestSkipped
+	status := Status{}
+	status.Total = tmplData.NumOfTests
+	status.Pass = tmplData.NumOfTestPassed
+	status.Skip = tmplData.NumOfTestSkipped
+	status.Fail = tmplData.NumOfTestFailed
+	writeStatusJson(&status)
+
 	tmplData.TestDuration = elapsedTestTime.Round(time.Millisecond)
 	td := time.Now()
 	tmplData.TestExecutionDate = fmt.Sprintf("%s %d, %d %02d:%02d:%02d",
@@ -489,4 +507,9 @@ func checkIfStdinIsPiped() error {
 		return nil
 	}
 	return errors.New("ERROR: missing ≪ stdin ≫ pipe")
+}
+
+func writeStatusJson(status *Status) {
+	file, _ := json.MarshalIndent(status, "", " ")
+	_ = ioutil.WriteFile("status.json", file, 0644)
 }
