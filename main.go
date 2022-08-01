@@ -90,6 +90,7 @@ type (
 		listFlag   string
 		inputFlag  string
 		outputFlag string
+		outputEnv  string
 		verbose    bool
 	}
 
@@ -176,7 +177,7 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 			if err != nil {
 				return err
 			}
-			err = generateReport(tmplData, allTests, testFileDetailByPackage, elapsedTestTime, reportFileWriter)
+			err = generateReport(tmplData, allTests, testFileDetailByPackage, elapsedTestTime, reportFileWriter, flags.outputEnv)
 			elapsedTime := time.Since(startTime)
 			elapsedTimeMsg := []byte(fmt.Sprintf("[report] finished in %s\n", elapsedTime))
 			if _, err := cmd.OutOrStdout().Write(elapsedTimeMsg); err != nil {
@@ -210,6 +211,11 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 		"o",
 		"report.html",
 		"the HTML output file")
+	rootCmd.PersistentFlags().StringVarP(&flags.outputEnv,
+		"env",
+		"e",
+		"status.env",
+		"env file with total,pass,fail,skip status")
 	rootCmd.PersistentFlags().StringVarP(&flags.inputFlag,
 		"input",
 		"i",
@@ -401,7 +407,7 @@ func (t byName) Less(i, j int) bool {
 	return t[i].name < t[j].name
 }
 
-func generateReport(tmplData *templateData, allTests map[string]*testStatus, testFileDetailByPackage testFileDetailsByPackage, elapsedTestTime time.Duration, reportFileWriter *bufio.Writer) error {
+func generateReport(tmplData *templateData, allTests map[string]*testStatus, testFileDetailByPackage testFileDetailsByPackage, elapsedTestTime time.Duration, reportFileWriter *bufio.Writer, outptuEnvFile string) error {
 	// // read the html template from the generated embedded asset go file
 	// testReportHTMLTemplateStr, err := ioutil.ReadFile("../dist/report.html.template")
 	tpl := template.New("report.html.template")
@@ -458,7 +464,7 @@ func generateReport(tmplData *templateData, allTests map[string]*testStatus, tes
 	status.Pass = tmplData.NumOfTestPassed
 	status.Skip = tmplData.NumOfTestSkipped
 	status.Fail = tmplData.NumOfTestFailed
-	writeStatusJson(&status)
+	writeStatus(&status, outptuEnvFile)
 
 	tmplData.TestDuration = elapsedTestTime.Round(time.Millisecond)
 	td := time.Now()
@@ -509,7 +515,7 @@ func checkIfStdinIsPiped() error {
 	return errors.New("ERROR: missing ≪ stdin ≫ pipe")
 }
 
-func writeStatusJson(status *Status) {
-	file, _ := json.MarshalIndent(status, "", " ")
-	_ = ioutil.WriteFile("status.json", file, 0644)
+func writeStatus(status *Status, outptuEnvFile string) {
+	content := []byte(fmt.Sprintf("export TOTAL=%d\nexport PASS=%d\nexport FAIL=%d\nexport SKIP=%d\n", status.Total, status.Pass, status.Fail, status.Skip))
+	_ = ioutil.WriteFile(outptuEnvFile, content, 0644)
 }
