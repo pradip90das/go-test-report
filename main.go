@@ -41,12 +41,13 @@ type Status struct {
 
 type (
 	goTestOutputRow struct {
-		Time     string
-		TestName string `json:"Test"`
-		Action   string
-		Package  string
-		Elapsed  float64
-		Output   string
+		Time        string
+		TestName    string `json:"Test"`
+		Action      string
+		Package     string
+		Elapsed     float64
+		Output      string
+		Screenshots []string
 	}
 
 	testStatus struct {
@@ -58,6 +59,7 @@ type (
 		Skipped            bool
 		TestFileName       string
 		TestFunctionDetail testFunctionFilePos
+		Screenshots        []string
 	}
 
 	templateData struct {
@@ -273,7 +275,13 @@ func readTestDataFromFile(inputFile string, flags *cmdFlags, cmd *cobra.Command)
 			if strings.Contains(goTestOutputRow.Output, "--- PASS:") {
 				goTestOutputRow.Output = strings.TrimSpace(goTestOutputRow.Output)
 			}
+			screenshotKeyWord := "Screenshots :"
+			if strings.Contains(goTestOutputRow.Output, screenshotKeyWord) {
+				screenshots := strings.TrimSpace(strings.Split(goTestOutputRow.Output, screenshotKeyWord)[1])
+				goTestOutputRow.Screenshots = append(goTestOutputRow.Screenshots, strings.Split(screenshots[1:len(screenshots)-1], " ")...)
+			}
 			status.Output = append(status.Output, goTestOutputRow.Output)
+			status.Screenshots = append(status.Screenshots, goTestOutputRow.Screenshots...)
 		}
 	}
 	return allPackageNames, allTests, nil

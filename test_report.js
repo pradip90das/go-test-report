@@ -4,6 +4,7 @@
  * @property {string} Package
  * @property {number} ElapsedTime
  * @property {Array.<string>} Output
+ * @property {Array.<string>} Screenshots
  * @property {boolean} Passed
  * @property {boolean} Skipped
  */
@@ -154,6 +155,20 @@ window.GoTestReport = function (elements) {
           const packageNameDiv = document.createElement('div')
           packageNameDiv.classList.add('package')
           packageNameDiv.innerHTML = `<strong>Package:</strong> ${testStatus.Package}`
+          const screenshotDiv = document.createElement('div')
+          screenshotDiv.classList.add('package')
+          const ul = document.createElement('ul')
+          testStatus.Screenshots.forEach(element => {
+            var li = document.createElement('li');
+            var link = document.createElement('a');
+            link.setAttribute("href",element);
+            var linkText = document.createTextNode(element);
+            link.appendChild(linkText);
+            li.appendChild(link);
+            ul.appendChild(li);
+          });
+          screenshotDiv.innerHTML = `<strong>Screenshots:</strong>`
+          screenshotDiv.append(ul)
           const testFileNameDiv = document.createElement('div')
           testFileNameDiv.classList.add('filename')
           if (testStatus.TestFileName.trim() === "") {
@@ -163,6 +178,7 @@ window.GoTestReport = function (elements) {
             testFileNameDiv.innerHTML += `<strong>Line:</strong> ${testStatus.TestFunctionDetail.Line} `
             testFileNameDiv.innerHTML += `<strong>Col:</strong> ${testStatus.TestFunctionDetail.Col}`
           }
+          testDetailDiv.insertAdjacentElement('beforeend', screenshotDiv)
           testDetailDiv.insertAdjacentElement('beforeend', packageNameDiv)
           testDetailDiv.insertAdjacentElement('beforeend', testFileNameDiv)
           testOutputDiv.insertAdjacentElement('afterbegin', consolePre)
