@@ -47,9 +47,9 @@ class GoTestReportElements { }
  * @returns {{testResultsClickHandler: testResultsClickHandler}}
  * @constructor
  */
-var testCaseFilter = ["PASS","FAIL","SKIP"]
+var testCaseFilter = ["PASS", "FAIL", "SKIP"]
 
-function Filter(status){
+function Filter(status) {
   testCaseFilter = status
   document.getElementById('0').click()
 }
@@ -107,7 +107,7 @@ window.GoTestReport = function (elements) {
         const testPassedStatus = /**@type {string}*/ (testPassed) ? '' : (testSkipped ? 'skipped' : 'failed')
         const testStatus = /**@type {string}*/ (testPassed) ? 'PASS' : (testSkipped ? 'SKIP' : 'FAIL')
         const testId = /**@type {string}*/ target.attributes['id'].value
-        if (testCaseFilter == undefined  || testCaseFilter.includes(testStatus)) {
+        if (testCaseFilter == undefined || testCaseFilter.includes(testStatus)) {
           testGroupList += `<div class="testGroupRow ${testPassedStatus}" data-groupid="${testId}" data-index="${i}">
         <span class="testTextStatus ${testPassedStatus}">${testStatus}</span>
         <span class="testStatus ${testPassedStatus}">${(testPassed) ? '&check' : (testSkipped ? '&dash' : '&cross')};</span>
@@ -117,7 +117,7 @@ window.GoTestReport = function (elements) {
         }
 
       }
-      if (testGroupList === ''){
+      if (testGroupList === '') {
         testGroupList += `<div <div style="padding-top: 50px;margin-left: 45%;"><span class="">No ${testCaseFilter} testcase</span></div>`
       }
       const testGroupListElem = elements.testGroupListElem
@@ -157,18 +157,21 @@ window.GoTestReport = function (elements) {
           packageNameDiv.innerHTML = `<strong>Package:</strong> ${testStatus.Package}`
           const screenshotDiv = document.createElement('div')
           screenshotDiv.classList.add('package')
-          const ul = document.createElement('ul')
-          testStatus.Screenshots.forEach(element => {
-            var li = document.createElement('li');
-            var link = document.createElement('a');
-            link.setAttribute("href",element);
-            var linkText = document.createTextNode(element);
-            link.appendChild(linkText);
-            li.appendChild(link);
-            ul.appendChild(li);
-          });
-          screenshotDiv.innerHTML = `<strong>Screenshots:</strong>`
-          screenshotDiv.append(ul)
+          if (testStatus.Screenshots && testStatus.Screenshots.length > 0) {
+            const ul = document.createElement('ul')
+            testStatus.Screenshots.forEach(element => {
+              var li = document.createElement('li');
+              var link = document.createElement('a');
+              link.setAttribute("href", element);
+              link.setAttribute("target", "_blank");
+              var linkText = document.createTextNode(element);
+              link.appendChild(linkText);
+              li.appendChild(link);
+              ul.appendChild(li);
+            });
+            screenshotDiv.innerHTML = `<strong>Screenshots:</strong>`
+            screenshotDiv.append(ul)
+          }
           const testFileNameDiv = document.createElement('div')
           testFileNameDiv.classList.add('filename')
           if (testStatus.TestFileName.trim() === "") {
