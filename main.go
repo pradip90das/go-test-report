@@ -162,12 +162,21 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 					e = err
 				}
 			}()
-			startTestTime := time.Now()
+			strStartTestTime := os.Getenv("START_TIME")
+			startTestTime, err := time.Parse(time.UnixDate, strStartTestTime)
+			if err != nil {
+				startTestTime = time.Now()
+			}
 			allPackageNames, allTests, err := readTestDataFromFile(tmplData.InputFilename, flags, cmd)
 			if err != nil {
 				return errors.New(err.Error() + "\n")
 			}
 			elapsedTestTime := time.Since(startTestTime)
+			strElapsedTestTime := os.Getenv("END_TIME")
+			endTestTime, err := time.Parse(time.UnixDate, strElapsedTestTime)
+			if err == nil {
+				elapsedTestTime = endTestTime.Sub(startTestTime)
+			}
 			// used to the location of test functions in test go files by package and test function name.
 			var testFileDetailByPackage testFileDetailsByPackage
 			if flags.listFlag != "" {
@@ -180,6 +189,10 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 				return err
 			}
 			err = generateReport(tmplData, allTests, testFileDetailByPackage, elapsedTestTime, reportFileWriter, flags.outputEnv)
+			if err != nil {
+				return err
+			}
+
 			elapsedTime := time.Since(startTime)
 			elapsedTimeMsg := []byte(fmt.Sprintf("[report] finished in %s\n", elapsedTime))
 			if _, err := cmd.OutOrStdout().Write(elapsedTimeMsg); err != nil {
