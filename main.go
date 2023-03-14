@@ -33,10 +33,11 @@ var testReportHTMLTemplateStr []byte
 var testReportJsCodeStr []byte
 
 type Status struct {
-	Pass  int `json:"pass,omitempty"`
-	Fail  int `json:"fail,omitempty"`
-	Total int `json:"total,omitempty"`
-	Skip  int `json:"skip,omitempty"`
+	Pass        int    `json:"pass,omitempty"`
+	Fail        int    `json:"fail,omitempty"`
+	Total       int    `json:"total,omitempty"`
+	Skip        int    `json:"skip,omitempty"`
+	ElapsedTime string `json:"elapsed_time,omitempty"`
 }
 
 type (
@@ -485,12 +486,15 @@ func generateReport(tmplData *templateData, allTests map[string]*testStatus, tes
 	status.Pass = tmplData.NumOfTestPassed
 	status.Skip = tmplData.NumOfTestSkipped
 	status.Fail = tmplData.NumOfTestFailed
+
 	writeStatus(&status, outptuEnvFile)
 
 	tmplData.TestDuration = elapsedTestTime.Round(time.Millisecond)
 	td := time.Now()
 	tmplData.TestExecutionDate = fmt.Sprintf("%s %d, %d %02d:%02d:%02d",
 		td.Month(), td.Day(), td.Year(), td.Hour(), td.Minute(), td.Second())
+	status.ElapsedTime = tmplData.TestExecutionDate
+	writeStatus(&status, outptuEnvFile)
 	if err := tpl.Execute(reportFileWriter, tmplData); err != nil {
 		return err
 	}

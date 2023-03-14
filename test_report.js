@@ -108,7 +108,7 @@ window.GoTestReport = function (elements) {
         const testStatus = /**@type {string}*/ (testPassed) ? 'PASS' : (testSkipped ? 'SKIP' : 'FAIL')
         const testId = /**@type {string}*/ target.attributes['id'].value
         if (testCaseFilter == undefined || testCaseFilter.includes(testStatus)) {
-          testGroupList += `<div class="testGroupRow ${testPassedStatus}" data-groupid="${testId}" data-index="${i}">
+          testGroupList += `<div id=${testResult.TestName} class="testGroupRow ${testPassedStatus}" data-groupid="${testId}" data-index="${i}">
         <span class="testTextStatus ${testPassedStatus}">${testStatus}</span>
         <span class="testStatus ${testPassedStatus}">${(testPassed) ? '&check' : (testSkipped ? '&dash' : '&cross')};</span>
         <span class="testTitle">${testResult.TestName}</span>
@@ -219,8 +219,16 @@ window.GoTestReport = function (elements) {
 
   elements.testGroupListElem
     .addEventListener('click', event =>
-      goTestReport.testGroupListHandler(/**@type {Element}*/ event.target,
-        elements.data))
-
+      window.location.search = 'testcase=' + event.target.id
+    )
+  window.onload = function () {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const testcase = urlParams.get('testcase')
+    target = document.getElementById(testcase);
+    goTestReport.testGroupListHandler(/**@type {Element}*/ target,
+      elements.data)
+    target.scrollIntoView();
+  };
   return goTestReport
 }

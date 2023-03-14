@@ -147,10 +147,10 @@ func TestGetAllDetails(t *testing.T) {
 	assertions := assert.New(t)
 	data := `{
 	"Dir": ".",
-	"ImportPath": "github.com/pradip90das/go-test-report",
+	"ImportPath": "github.com/vakenbolt/go-test-report",
 	"Name": "main",
 	"Module": {
-		"Path": "github.com/pradip90das/go-test-report",
+		"Path": "github.com/vakenbolt/go-test-report",
 		"Main": true,
 		"Dir": "."
 	},
