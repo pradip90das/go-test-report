@@ -107,7 +107,7 @@ window.GoTestReport = function (elements) {
         const testPassedStatus = /**@type {string}*/ (testPassed) ? '' : (testSkipped ? 'skipped' : 'failed')
         const testStatus = /**@type {string}*/ (testPassed) ? 'PASS' : (testSkipped ? 'SKIP' : 'FAIL')
         const testId = /**@type {string}*/ target.attributes['id'].value
-        const copyURL = window.location.protocol + window.location.pathname + "?testcase=" + testResult.TestName
+        const copyURL = window.location.origin + window.location.pathname + "?testcase=" + testResult.TestName
         if (testCaseFilter == undefined || testCaseFilter.includes(testStatus)) {
           testGroupList += `<div id=${testResult.TestName} class="testGroupRow ${testPassedStatus}" data-groupid="${testId}" data-index="${i}">
         <span class="testTextStatus ${testPassedStatus}">${testStatus}</span>
