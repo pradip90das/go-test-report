@@ -219,16 +219,18 @@ window.GoTestReport = function (elements) {
 
   elements.testGroupListElem
     .addEventListener('click', event =>
-      window.location.search = 'testcase=' + event.target.id
-    )
+      goTestReport.testGroupListHandler(/**@type {Element}*/ event.target,
+        elements.data))
   window.onload = function () {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     const testcase = urlParams.get('testcase')
-    target = document.getElementById(testcase);
-    goTestReport.testGroupListHandler(/**@type {Element}*/ target,
-      elements.data)
-    target.scrollIntoView();
+    if (testcase) {
+      target = document.getElementById(testcase);
+      goTestReport.testGroupListHandler(/**@type {Element}*/ target,
+        elements.data)
+      target.scrollIntoView();
+    }
   };
   return goTestReport
 }
