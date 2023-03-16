@@ -190,7 +190,11 @@
         }
 
         .cardContainer.testGroupList .testGroupRow span.testDuration {
-            pointer-events: none;
+        padding: auto;
+        }
+
+        .cardContainer.testGroupList .testGroupRow span.shareLink {
+        padding-right: 10px;
         }
 
         .cardContainer.testGroupList .testGroupRow {
@@ -276,6 +280,13 @@
 <div class="testReportContainer">
     <div class="cardContainer">
         <div id="testResults">
+            <script>
+            function copyTestcaseURL(testcaseURL) {
+                navigator.clipboard.writeText(testcaseURL).then(() => {
+                alert("Testcase URL copied to clipboard");
+                });
+            }
+            </script>
             {{range $k, $v := .TestResults}}
                 <div class="testResultGroup {{.FailureIndicator}} {{.SkippedIndicator}}" id="{{$k}}"></div>
             {{end}}

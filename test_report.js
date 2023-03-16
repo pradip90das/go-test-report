@@ -107,12 +107,13 @@ window.GoTestReport = function (elements) {
         const testPassedStatus = /**@type {string}*/ (testPassed) ? '' : (testSkipped ? 'skipped' : 'failed')
         const testStatus = /**@type {string}*/ (testPassed) ? 'PASS' : (testSkipped ? 'SKIP' : 'FAIL')
         const testId = /**@type {string}*/ target.attributes['id'].value
+        const copyURL = window.location.protocol + window.location.pathname + "?testcase=" + testResult.TestName
         if (testCaseFilter == undefined || testCaseFilter.includes(testStatus)) {
           testGroupList += `<div id=${testResult.TestName} class="testGroupRow ${testPassedStatus}" data-groupid="${testId}" data-index="${i}">
         <span class="testTextStatus ${testPassedStatus}">${testStatus}</span>
         <span class="testStatus ${testPassedStatus}">${(testPassed) ? '&check' : (testSkipped ? '&dash' : '&cross')};</span>
         <span class="testTitle">${testResult.TestName}</span>
-        <span class="testDuration"><span>${testResult.ElapsedTime}s </span>⏱</span>
+        <span class="testDuration"><span class="shareLink" id=${copyURL} onClick='copyTestcaseURL("${copyURL}")'>🔗</span><span >${testResult.ElapsedTime}s </span>⏱</span>
       </div>`
         }
 
