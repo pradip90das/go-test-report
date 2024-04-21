@@ -15,7 +15,7 @@
             font-family: serif;
             font-size: 2em;
             padding-left: 30px;
-            padding-top: 80px;
+            padding-top: 30px;
             display: block;
             color: #a5a5a5;
             text-shadow: 0 -1px 1px white;
@@ -82,9 +82,27 @@
             color: #9e9e9e;
             font-size: 0.9em;
         }
+        .serverInfo{
+            right: 10px;
+            margin: 14px 40px 8px 30px;
+            color: #9e9e9e;
+            font-size: 0.9em;
+            align-content: end;
+            padding-left: 30px;
+        }
+        .serverInfoSpace{
+            right: 10px;
+            color: #9e9e9e;
+            font-size: 0.9em;
+            align-content: end;
+            padding-left: 30px;
+        }
+        .infoTable{
+            width: 100%
+        }
 
         .testReportContainer {
-            padding: 0 32px 32px 32px;
+            padding: 10px 32px 32px 32px;
         }
 
         .cardContainer {
@@ -262,8 +280,34 @@
 <body>
 <div class="pageHeader">
     <div>
+
+    <table class="infoTable">
+    <tr>
+    <td>
     <span class="projectTitle">{{.ReportTitle}}</span>
+    </td>
+    </tr>
+    <tr>
+    <td>
     <span class="testExecutionDate">{{.TestExecutionDate}}</span>
+    </td>
+    </tr>
+    <td class="serverInfoSpace">====================
+    </td>
+    <tr>
+    </tr>
+    <tr>
+    <td class="serverInfo">
+    {{range .ServerInfo}}
+    {{if .IsLink}}
+        <div>{{.Key}}: <a href="{{.Value}}" target="_blank">{{.Value}}</a> </div>
+    {{- else}}
+            <div>{{.Key}}: {{.Value}}</div>
+    {{- end}}
+    {{end}}
+    </td>
+    </tr>
+    </table>
     </div>
     <div class="testStats">
         <span class="total" onclick="Filter(['FAIL','PASS','SKIP'])" id="total">
