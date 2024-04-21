@@ -62,6 +62,10 @@ type (
 		TestFunctionDetail testFunctionFilePos
 		Screenshots        []string
 	}
+	Info struct {
+		Key, Value string
+		IsLink     bool
+	}
 
 	templateData struct {
 		TestResultGroupIndicatorWidth  string
@@ -78,6 +82,7 @@ type (
 		OutputFilename                 string
 		InputFilename                  string
 		TestExecutionDate              string
+		ServerInfo                     []Info
 	}
 
 	testGroupData struct {
@@ -87,6 +92,7 @@ type (
 	}
 
 	cmdFlags struct {
+		serverInfo string
 		titleFlag  string
 		sizeFlag   string
 		groupSize  int
@@ -140,10 +146,25 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 		Use:  "report",
 		Long: "convert json go test report to html",
 		RunE: func(cmd *cobra.Command, args []string) (e error) {
+
 			startTime := time.Now()
 			if err := parseSizeFlag(tmplData, flags); err != nil {
 				return err
 			}
+			serverInfo := []Info{}
+			for _, info := range strings.Split(flags.serverInfo, ";") {
+				kv := strings.Split(info, "::")
+				if len(kv) > 1 {
+					var isLink bool
+					if strings.Contains(kv[1], "http") {
+						isLink = true
+					}
+					info := Info{Key: kv[0], Value: kv[1], IsLink: isLink}
+					serverInfo = append(serverInfo, info)
+
+				}
+			}
+			tmplData.ServerInfo = serverInfo
 
 			tmplData.numOfTestsPerGroup = flags.groupSize
 			tmplData.ReportTitle = flags.titleFlag
@@ -170,7 +191,7 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 			}
 			allPackageNames, allTests, err := readTestDataFromFile(tmplData.InputFilename, flags, cmd)
 			if err != nil {
-				return errors.New(err.Error() + "\n")
+				return errors.New("failed to read input file,err=" + err.Error() + "\n")
 			}
 			elapsedTestTime := time.Since(startTestTime)
 			strElapsedTestTime := os.Getenv("END_TIME")
@@ -202,6 +223,11 @@ func initRootCommand() (*cobra.Command, *templateData, *cmdFlags) {
 			return nil
 		},
 	}
+	rootCmd.PersistentFlags().StringVarP(&flags.serverInfo,
+		"serverInfo",
+		"f",
+		"",
+		"the server info shown in the test report")
 	rootCmd.PersistentFlags().StringVarP(&flags.titleFlag,
 		"title",
 		"t",
